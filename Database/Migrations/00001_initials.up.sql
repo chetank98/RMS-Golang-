@@ -6,20 +6,27 @@ CREATE TABLE IF NOT EXISTS Users (
     email TEXT NOT NULL,
     password TEXT NOT NULL,
     role role_type NOT NULL,
-    address TEXT NOT NULL REFERENCES Users(id),
-    latitude DOUBLE PRECISION NOT NULL REFERENCES Users(id),
-    longitude DOUBLE PRECISION NOT NULL REFERENCES Users(id),
     created_by uuid REFERENCES Users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT Now(),
     archived_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS unique_user ON users (email) WHERE archived_at IS NULL;
 
 CREATE TYPE role_type AS ENUM (
     'Admin'
     'Sub-admin'
     'User'
+);
+
+CREATE TABLE IF NOT EXISTS address
+(
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    address TEXT NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    user_id UUID REFERENCES users (id) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    archived_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE IF NOT EXISTS Restaurants(
@@ -32,8 +39,6 @@ CREATE TABLE IF NOT EXISTS Restaurants(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT Now(),
     archived_at TIMESTAMP WITH TIME ZONE
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS unique_restaurant ON restaurants (name, address) WHERE archived_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS dishes
 (
@@ -51,8 +56,5 @@ CREATE TABLE IF NOT EXISTS User_sessions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     archived_at TIMESTAMP WITH TIME ZONE
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS unique_dish ON dishes (restaurant_id, name) WHERE archived_at IS NULL;
-
 
 COMMIT;

@@ -2,8 +2,9 @@ package Routes
 
 import (
 	"RMS/Handler"
+	"context"
 	"github.com/go-chi/chi/v5"
-	"golang.org/x/net/context"
+
 	"net/http"
 	"time"
 )
@@ -26,6 +27,10 @@ func SetupRoutes() *Server {
 	route.Route("/v1", func(r chi.Router) {
 		r.Get("/home", Handler.Home)
 	})
+
+	return &Server{
+		Router: route,
+	}
 
 }
 

@@ -8,6 +8,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -39,8 +40,24 @@ func ConnectAndMigrate(host, port, databasename, user, password string, sslMode 
 
 }
 
-func ShutdownDatabase() error {
-	return DBConnection.Close()
+func Tx(fn func(tx *sqlx.Tx) error) error {
+	tx, err := DBConnection.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start a transaction: %+v", err)
+	}
+	defer func() {
+		if err != nil {
+			if rollBackErr := tx.Rollback(); rollBackErr != nil {
+				logrus.Errorf("failed to rollback tx: %s", rollBackErr)
+			}
+			return
+		}
+		if commitErr := tx.Commit(); commitErr != nil {
+			logrus.Errorf("failed to commit tx: %s", commitErr)
+		}
+	}()
+	err = fn(tx)
+	return err
 }
 
 func migrateUp(db *sqlx.DB) error {
@@ -59,4 +76,8 @@ func migrateUp(db *sqlx.DB) error {
 		return err
 	}
 	return nil
+}
+
+func ShutdownDatabase() error {
+	return DBConnection.Close()
 }

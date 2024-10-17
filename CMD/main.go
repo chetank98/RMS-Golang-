@@ -2,6 +2,7 @@ package main
 
 import (
 	"RMS/Database"
+	"RMS/Routes"
 	"fmt"
 	"os"
 	"os/signal"
@@ -21,11 +22,11 @@ func main() {
 
 	fmt.Println("Welcome to the app - RMS")
 
-	connect := fmt.Sprintf("host %s port %s ", os.Getenv("DB_HOST"), os.Getenv(""))
+	connect := fmt.Sprintf("host %s port %s ", os.Getenv("DB_HOST"), os.Getenv("DB_PORT"))
 	fmt.Println(connect)
 
 	//server instance
-	serv := Server.SetupRoutes()
+	serv := Routes.SetupRoutes()
 	if err := Database.ConnectAndMigrate(
 		//dbHost, dbPort, dbName, dbUser, dbPassword,
 
