@@ -2,6 +2,9 @@ package Routes
 
 import (
 	"RMS/Handler"
+	"RMS/Middleware"
+	"RMS/Models"
+	"RMS/Utils"
 	"context"
 	"github.com/go-chi/chi/v5"
 
@@ -25,7 +28,33 @@ func SetupRoutes() *Server {
 	route := chi.NewRouter()
 
 	route.Route("/v1", func(r chi.Router) {
+		r.Get("/health", Utils.Health)
 		r.Get("/home", Handler.Home)
+
+		r.Post("/login", Handler.LoginUser)
+
+		r.Group(func(r chi.Router) {
+
+			r.Use(Middleware.Authenticate)
+
+			r.Route("/admin", func(admin chi.Router) {
+				r.Use(Middleware.ShouldHaveRole(Models.RoleAdmin))
+				admin.Post("/createUser", Handler.CreateUser)
+				admin.Post("/createRestaurants", Handler.CreateRestaurants)
+				admin.Get("/getAllRestaurants", Handler.GetallRestaurants)
+				admin.Post("/subAdminCreation", Handler.SubAdminCreation)
+				admin.Get("getAllSubadmins", Handler.GetAllSubAdmins)
+			})
+			r.Route("/sub-admin", func(subAdmin chi.Router) {
+				r.Use(Middleware.ShouldHaveRole(Models.RoleSubAdmin))
+				subAdmin.Post("createUser", Handler.CreateUser)
+				subAdmin.Get("getAllRetaurants", Handler.GetAllRestaurantsBySubAdmin)
+			})
+			r.Route("/user", func(user chi.Router) {
+				r.Use(Middleware.ShouldHaveRole(Models.RoleUser))
+				user.Get("getAllRestaurants", Handler.GetallRestaurants)
+			})
+		})
 	})
 
 	return &Server{

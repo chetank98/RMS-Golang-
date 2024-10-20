@@ -1,5 +1,11 @@
 BEGIN;
 
+CREATE TYPE role_type AS ENUM (
+    'Admin',
+    'Sub-admin',
+    'User'
+);
+
 CREATE TABLE IF NOT EXISTS Users (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -11,20 +17,13 @@ CREATE TABLE IF NOT EXISTS Users (
     archived_at TIMESTAMP WITH TIME ZONE
 );
 
-
-CREATE TYPE role_type AS ENUM (
-    'Admin'
-    'Sub-admin'
-    'User'
-);
-
 CREATE TABLE IF NOT EXISTS address
 (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     address TEXT NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
-    user_id UUID REFERENCES users (id) NOT NULL,
+    user_id UUID REFERENCES Users (id) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     archived_at TIMESTAMP WITH TIME ZONE
 );

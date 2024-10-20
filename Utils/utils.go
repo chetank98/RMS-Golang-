@@ -4,6 +4,7 @@ import (
 	"RMS/Models"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 	"github.com/teris-io/shortid"
@@ -12,6 +13,7 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -101,20 +103,33 @@ func RespondJSON(w http.ResponseWriter, statusCode int, body interface{}) {
 	}
 }
 
-func GenerateJWT(userID, email, name, sessionID string) (string, error) {
+func GenerateJWT(userID, sessionID string, role Models.Role) (string, error) {
 	claims := jwt.MapClaims{
-		"userID":    userID,
-		"email":     email,
-		"name":      name,
-		"sessionID": sessionID,
+		"userId":    userID,
+		"sessionId": sessionID,
+		"role":      role,
 		"iat":       time.Now().Unix(),
-		"exp":       time.Now().Add(time.Hour * 2).Unix(),
+		"exp":       time.Now().Add(time.Hour * 5).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	signToken, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
 	if err != nil {
 		return "", err
 	}
-	return signedToken, nil
+	return signToken, nil
+}
+
+func SetupBindVars(stmt, bindVars string, length int) string {
+	bindVars += ","
+	stmt = fmt.Sprintf("%s %s", stmt, strings.Repeat(bindVars, length))
+	return replaceSQL(strings.TrimSuffix(stmt, ","), "?")
+}
+
+func replaceSQL(old, searchPattern string) string {
+	tmpCount := strings.Count(old, searchPattern)
+	for m := 1; m <= tmpCount; m++ {
+		old = strings.Replace(old, searchPattern, "$"+strconv.Itoa(m), 1)
+	}
+	return old
 }

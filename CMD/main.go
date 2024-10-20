@@ -56,8 +56,8 @@ func main() {
 		logrus.WithError(err).Error("failed to close database connection")
 	}
 
-	//if err := serv.Shutdown(shutdownTimeout); err != nil {
-	//	logrus.WithError(err).Panic("failed to gracefully shutdown server")
-	//}
+	if err := serv.Shutdown(shutdownTimeout); err != nil {
+		logrus.WithError(err).Panic("failed to gracefully shutdown server")
+	}
 
 }
