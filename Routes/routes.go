@@ -37,22 +37,38 @@ func SetupRoutes() *Server {
 
 			r.Use(Middleware.Authenticate)
 
+			r.Get("/dishesByRestaurant", Handler.DishesByRestaurant)
+			r.Post("/logout", Handler.LogoutUser)
+
 			r.Route("/admin", func(admin chi.Router) {
-				r.Use(Middleware.ShouldHaveRole(Models.RoleAdmin))
+				admin.Use(Middleware.ShouldHaveRole(Models.RoleAdmin))
+
 				admin.Post("/createUser", Handler.CreateUser)
+				admin.Get("/getAllUsers", Handler.GetAllUsersByAdmin)
 				admin.Post("/createRestaurants", Handler.CreateRestaurants)
 				admin.Get("/getAllRestaurants", Handler.GetallRestaurants)
 				admin.Post("/subAdminCreation", Handler.SubAdminCreation)
-				admin.Get("getAllSubadmins", Handler.GetAllSubAdmins)
+				admin.Get("/getAllSubadmins", Handler.GetAllSubAdmins)
+				admin.Route("/createDish/{restaurantId}", func(restId chi.Router) {
+					restId.Post("/", Handler.CreateDish)
+				})
+				admin.Get("/getAllDishes", Handler.GetAllDishes)
 			})
 			r.Route("/sub-admin", func(subAdmin chi.Router) {
-				r.Use(Middleware.ShouldHaveRole(Models.RoleSubAdmin))
-				subAdmin.Post("createUser", Handler.CreateUser)
-				subAdmin.Get("getAllRetaurants", Handler.GetAllRestaurantsBySubAdmin)
+				subAdmin.Use(Middleware.ShouldHaveRole(Models.RoleSubAdmin))
+				subAdmin.Post("/createUser", Handler.CreateUser)
+				subAdmin.Get("/userBySubAdmin", Handler.GetAllUsersBySubAdmin)
+				subAdmin.Post("/createRestaurant", Handler.CreateRestaurants)
+				subAdmin.Get("/getAllRetaurants", Handler.GetAllRestaurantsBySubAdmin)
+				subAdmin.Route("/createDish/{restaurantId}", func(restId chi.Router) {
+					restId.Post("/", Handler.CreateDish)
+				})
+				subAdmin.Get("/getDishesBySubadmin", Handler.GetAllDishesBySubAdmin)
 			})
 			r.Route("/user", func(user chi.Router) {
-				r.Use(Middleware.ShouldHaveRole(Models.RoleUser))
-				user.Get("getAllRestaurants", Handler.GetallRestaurants)
+				user.Use(Middleware.ShouldHaveRole(Models.RoleUser))
+				user.Get("/getAllRestaurants", Handler.GetallRestaurants)
+				user.Get("/getAllDishes", Handler.GetAllDishes)
 			})
 		})
 	})

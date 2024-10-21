@@ -110,3 +110,41 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	}{"login successful", token})
 
 }
+
+func LogoutUser(w http.ResponseWriter, r *http.Request) {
+	userCtx := Middleware.UserContext(r)
+	sessionID := userCtx.SessionID
+
+	if delErr := DbHelper.DeleteUserSession(sessionID); delErr != nil {
+		Utils.RespondError(w, http.StatusInternalServerError, delErr, "failed to delete user session")
+		return
+	}
+
+	Utils.RespondJSON(w, http.StatusOK, struct {
+		Message string `json:"message"`
+	}{"logout successful"})
+}
+
+func GetAllUsersByAdmin(w http.ResponseWriter, r *http.Request) {
+	users, getErr := DbHelper.GetAllUsersByAdmin()
+
+	if getErr != nil {
+		Utils.RespondError(w, http.StatusInternalServerError, getErr, "failed to get users")
+		return
+	}
+
+	Utils.RespondJSON(w, http.StatusOK, users)
+}
+
+func GetAllUsersBySubAdmin(w http.ResponseWriter, r *http.Request) {
+	userCtx := Middleware.UserContext(r)
+	loggedUserID := userCtx.UserID
+
+	users, getErr := DbHelper.GetAllUsersBySubAdmin(loggedUserID)
+	if getErr != nil {
+		Utils.RespondError(w, http.StatusInternalServerError, getErr, "failed to get users")
+		return
+	}
+
+	Utils.RespondJSON(w, http.StatusOK, users)
+}

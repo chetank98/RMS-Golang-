@@ -11,7 +11,7 @@ import (
 
 func CreateDish(w http.ResponseWriter, r *http.Request) {
 	restaurantID := chi.URLParam(r, "restaurantId")
-	var data Models.DishRequest
+	var data Models.DishCreation
 
 	if parseErr := Utils.ParsreBody(r.Body, &data); parseErr != nil {
 		Utils.RespondError(w, http.StatusBadRequest, parseErr, "failed to parse request body")

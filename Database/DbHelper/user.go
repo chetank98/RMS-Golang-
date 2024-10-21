@@ -55,6 +55,16 @@ func SessionStart(userId string) (string, error) {
 	return sessionId, createErr
 }
 
+func DeleteUserSession(sessionID string) error {
+	sqlQuery := `UPDATE user_sessions
+			  SET archived_at = NOW()
+			  WHERE user_id = $1
+			    AND archived_at IS NULL`
+
+	_, delErr := Database.DBConnection.Exec(sqlQuery, sessionID)
+	return delErr
+}
+
 func GettingLoginDetails(data Models.LoginRequest) (string, Models.Role, error) {
 	sqlQuery := `SELECT id, password, role 
 					FROM users 
@@ -81,4 +91,75 @@ func GetArchivedAt(sessionId string) (*time.Time, error) {
 	getErr := Database.DBConnection.Get(&archivedAt, sqlQuery, sessionId)
 	return archivedAt, getErr
 
+}
+
+func GetAllUsersByAdmin() ([]Models.User, error) {
+	sqlQuery := `SELECT id, name, email, role 
+			FROM users
+    	      WHERE role = 'user' 
+    	        AND archived_at IS NULL`
+
+	users := make([]Models.User, 0)
+	if fetchErr := Database.DBConnection.Select(&users, sqlQuery); fetchErr != nil {
+		return users, fetchErr
+	}
+
+	sqlQuery = `SELECT id, address, latitude, longitude, user_id 
+			FROM address
+    	      WHERE archived_at IS NULL`
+
+	addresses := make([]Models.Address, 0)
+	if fetchErr := Database.DBConnection.Select(&addresses, sqlQuery); fetchErr != nil {
+		return users, fetchErr
+	}
+
+	addressMap := make(map[string][]Models.Address)
+	for _, addr := range addresses {
+		addressMap[addr.UserID] = append(addressMap[addr.UserID], addr)
+	}
+
+	for i := range users {
+		if userAddresses, exists := addressMap[users[i].ID]; exists {
+			users[i].Address = userAddresses
+		}
+	}
+
+	return users, nil
+}
+
+func GetAllUsersBySubAdmin(loggedUserID string) ([]Models.User, error) {
+	sqlQuery := `SELECT id, name, email, role 
+			FROM users
+    	      WHERE created_by = $1
+    	        AND archived_at IS NULL`
+
+	users := make([]Models.User, 0)
+	if fetchErr := Database.DBConnection.Select(&users, sqlQuery, loggedUserID); fetchErr != nil {
+		return users, fetchErr
+	}
+
+	sqlQuery = `SELECT a.id, a.address, a.latitude, a.longitude, a.user_id
+			FROM address a
+					 JOIN users u on a.user_id = u.id
+			WHERE created_by = $1
+			  AND a.archived_at IS NULL
+			  AND u.archived_at IS NULL`
+
+	addresses := make([]Models.Address, 0)
+	if fetchErr := Database.DBConnection.Select(&addresses, sqlQuery, loggedUserID); fetchErr != nil {
+		return users, fetchErr
+	}
+
+	addressMap := make(map[string][]Models.Address)
+	for _, addr := range addresses {
+		addressMap[addr.UserID] = append(addressMap[addr.UserID], addr)
+	}
+
+	for i := range users {
+		if userAddresses, exists := addressMap[users[i].ID]; exists {
+			users[i].Address = userAddresses
+		}
+	}
+
+	return users, nil
 }
