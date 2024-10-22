@@ -69,6 +69,7 @@ func SetupRoutes() *Server {
 				user.Use(Middleware.ShouldHaveRole(Models.RoleUser))
 				user.Get("/getAllRestaurants", Handler.GetallRestaurants)
 				user.Get("/getAllDishes", Handler.GetAllDishes)
+				user.Get("/calculate-distance", Handler.CalculateDistance)
 			})
 		})
 	})

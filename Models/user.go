@@ -53,3 +53,13 @@ type UserCtx struct {
 	SessionID string `json:"sessionId"`
 	Role      Role   `json:"role"`
 }
+
+type DistanceRequest struct {
+	UserAddressID       string `json:"userAddressId" validate:"required"`
+	RestaurantAddressID string `json:"restaurantAddressId" validate:"required"`
+}
+
+type Coordinates struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}

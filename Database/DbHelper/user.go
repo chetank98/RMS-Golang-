@@ -96,7 +96,7 @@ func GetArchivedAt(sessionId string) (*time.Time, error) {
 func GetAllUsersByAdmin() ([]Models.User, error) {
 	sqlQuery := `SELECT id, name, email, role 
 			FROM users
-    	      WHERE role = 'user' 
+    	      WHERE role = 'User' 
     	        AND archived_at IS NULL`
 
 	users := make([]Models.User, 0)
@@ -162,4 +162,42 @@ func GetAllUsersBySubAdmin(loggedUserID string) ([]Models.User, error) {
 	}
 
 	return users, nil
+}
+
+func GetUserCoordinates(userAddressID string) (Models.Coordinates, error) {
+	SQL := `SELECT latitude, longitude 
+              FROM address 
+              WHERE id = $1
+              	AND archived_at IS NULL`
+
+	var coordinates Models.Coordinates
+	getErr := Database.DBConnection.Get(&coordinates, SQL, userAddressID)
+	return coordinates, getErr
+}
+
+func GetRestaurantCoordinates(restaurantAddressID string) (Models.Coordinates, error) {
+	SQL := `SELECT latitude, longitude 
+              FROM restaurants 
+              WHERE id = $1
+              	AND archived_at IS NULL`
+
+	var coordinates Models.Coordinates
+	getErr := Database.DBConnection.Get(&coordinates, SQL, restaurantAddressID)
+	return coordinates, getErr
+}
+
+func CalculateDistance(userCoordinates, restaurantCoordinates Models.Coordinates) (float64, error) {
+	args := []interface{}{userCoordinates.Latitude, userCoordinates.Longitude,
+		restaurantCoordinates.Latitude, restaurantCoordinates.Longitude}
+
+	SQL := `SELECT ROUND(
+						   (earth_distance(
+									ll_to_earth($1, $2),
+									ll_to_earth($3, $4)
+							) / 1000.0)::numeric, 1
+				   ) AS distance_km`
+
+	var distance float64
+	getErr := Database.DBConnection.Get(&distance, SQL, args...)
+	return distance, getErr
 }

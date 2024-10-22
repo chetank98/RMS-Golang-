@@ -8,6 +8,7 @@ import (
 	"RMS/Utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 )
 
@@ -147,4 +148,49 @@ func GetAllUsersBySubAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Utils.RespondJSON(w, http.StatusOK, users)
+}
+
+func CalculateDistance(w http.ResponseWriter, r *http.Request) {
+	var body Models.DistanceRequest
+
+	if parseErr := Utils.ParsreBody(r.Body, &body); parseErr != nil {
+		Utils.RespondError(w, http.StatusBadRequest, parseErr, "failed to parse request body")
+		return
+	}
+
+	v := validator.New()
+	if err := v.Struct(body); err != nil {
+		Utils.RespondError(w, http.StatusBadRequest, err, "input validation failed")
+		return
+	}
+
+	var eg errgroup.Group
+	var err error
+	var userCoordinates, restaurantCoordinates Models.Coordinates
+
+	eg.Go(func() error {
+		userCoordinates, err = DbHelper.GetUserCoordinates(body.UserAddressID)
+		return err
+	})
+
+	eg.Go(func() error {
+		restaurantCoordinates, err = DbHelper.GetRestaurantCoordinates(body.RestaurantAddressID)
+		return err
+	})
+
+	ergErr := eg.Wait()
+	if ergErr != nil {
+		Utils.RespondError(w, http.StatusInternalServerError, ergErr, "failed to get coordinates")
+		return
+	}
+
+	distance, calErr := DbHelper.CalculateDistance(userCoordinates, restaurantCoordinates)
+	if calErr != nil {
+		Utils.RespondError(w, http.StatusInternalServerError, calErr, "failed to calculate distance")
+		return
+	}
+
+	Utils.RespondJSON(w, http.StatusOK, struct {
+		Distance float64 `json:"distance"`
+	}{distance})
 }
