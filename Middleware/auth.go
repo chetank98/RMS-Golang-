@@ -9,7 +9,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 	"os"
-	"strings"
 )
 
 type ContextKey string
@@ -75,19 +74,32 @@ const (
 //	})
 //}
 
+func SetCookies(w http.ResponseWriter, tokenString string) {
+	cookie := http.Cookie{
+		Name:     "access-token",
+		Value:    tokenString,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	}
+	http.SetCookie(w, &cookie)
+}
+
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			Utils.RespondError(w, http.StatusUnauthorized, nil, "authorization header missing")
+
+		at, err := r.Cookie("access-token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				Utils.RespondError(w, http.StatusUnauthorized, nil, "authorization cookie missing")
+			} else {
+				Utils.RespondError(w, http.StatusBadRequest, err, "error retrieving cookie")
+			}
 			return
 		}
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == authHeader {
-			Utils.RespondError(w, http.StatusUnauthorized, nil, "bearer token missing")
-			return
-		}
+		tokenString := at.Value
 
 		token, parseErr := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

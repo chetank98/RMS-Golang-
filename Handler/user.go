@@ -105,6 +105,8 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	Middleware.SetCookies(w, token)
+
 	Utils.RespondJSON(w, http.StatusOK, struct {
 		Message string `json:"message"`
 		Token   string `json:"token"`
